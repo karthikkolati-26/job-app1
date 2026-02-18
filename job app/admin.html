@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Panel</title>
+</head>
+
+<body style="text-align:center;font-family:Arial;margin-top:50px">
+
+<h2>Admin Panel — Manage Jobs</h2>
+
+<h3>Add Job</h3>
+
+<input id="title" placeholder="Job Title" style="padding:10px;width:250px">
+<br><br>
+
+<input id="skills" placeholder="Skills (HTML, CSS, JS)" style="padding:10px;width:250px">
+<br><br>
+
+<button onclick="addJob()">Add Job</button>
+
+<p id="msg"></p>
+
+<hr>
+
+<h3>All Jobs</h3>
+<div id="jobList"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBvJGcM5bKgsdaiTSP4yytC-6Kldc-J35I",
+  authDomain: "job-app-683fa.firebaseapp.com",
+  projectId: "job-app-683fa",
+  storageBucket: "job-app-683fa.firebasestorage.app",
+  messagingSenderId: "951123608239",
+  appId: "1:951123608239:web:1e75570a094bc98b2b4a5a"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+
+// ADMIN PROTECTION
+auth.onAuthStateChanged(user=>{
+
+if(!user){
+document.body.innerHTML="<h2>Login First</h2>";
+return;
+}
+
+if(user.email !== "karthikkolati2004@gmail.com"){
+document.body.innerHTML="<h2>Access Denied</h2>";
+return;
+}
+
+loadJobs();
+
+});
+
+
+// ADD JOB
+function addJob(){
+
+let title = document.getElementById("title").value;
+
+let skills = document.getElementById("skills").value
+.split(",")
+.map(skill=> skill.trim());
+
+let msg = document.getElementById("msg");
+
+if(title==="" || skills.length===0){
+msg.innerText="Fill all fields";
+return;
+}
+
+db.collection("jobs").add({
+title:title,
+skills:skills
+});
+
+msg.innerText="Job Added ✅";
+
+setTimeout(loadJobs,500);
+}
+
+
+// LOAD JOBS
+function loadJobs(){
+
+db.collection("jobs").get().then(snapshot=>{
+
+let output="";
+
+snapshot.forEach(doc=>{
+
+let job = doc.data();
+
+output += `
+<div style="border:1px solid #ccc;padding:15px;margin:15px">
+
+<h3>${job.title}</h3>
+
+<button onclick="editJob('${doc.id}','${job.title}','${job.skills.join(",")}')">
+Edit
+</button>
+
+<button onclick="deleteJob('${doc.id}')">
+Delete
+</button>
+
+</div>
+`;
+
+});
+
+document.getElementById("jobList").innerHTML = output;
+
+});
+
+}
+
+
+// DELETE
+function deleteJob(id){
+
+db.collection("jobs").doc(id).delete();
+
+alert("Deleted");
+
+setTimeout(loadJobs,500);
+
+}
+
+
+// EDIT
+function editJob(id,title,skills){
+
+let newTitle = prompt("Edit Title:", title);
+if(!newTitle) return;
+
+let newSkills = prompt("Edit Skills:", skills);
+if(!newSkills) return;
+
+db.collection("jobs").doc(id).update({
+title:newTitle,
+skills:newSkills.split(",").map(s=>s.trim())
+});
+
+alert("Updated");
+
+setTimeout(loadJobs,500);
+
+}
+
+</script>
+
+</body>
+</html>
